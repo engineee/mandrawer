@@ -31,33 +31,34 @@ def collect_file_attrs(path):
 def apply_file_attrs(attrs):
     for path in sorted(attrs):
         attr = attrs[path]
-        if os.path.lexists(path):
-            atime = attr["atime"]
-            mtime = attr["mtime"]
-            uid = attr["uid"]
-            gid = attr["gid"]
-            mode = attr["mode"]
+        # Excluding symbolic links because if they are "broken" the script fails during "restore"
+        if not os.path.islink(path):
+            if os.path.lexists(path):
+                atime = attr["atime"]
+                mtime = attr["mtime"]
+                uid = attr["uid"]
+                gid = attr["gid"]
+                mode = attr["mode"]
 
-            current_file_info = os.lstat(path)
-            mode_changed = current_file_info.st_mode != mode
-            mtime_changed = current_file_info.st_mtime != mtime
-            uid_changed = current_file_info.st_uid != uid
-            gid_changed = current_file_info.st_gid != gid
+                current_file_info = os.lstat(path)
+                mode_changed = current_file_info.st_mode != mode
+                mtime_changed = current_file_info.st_mtime != mtime
+                uid_changed = current_file_info.st_uid != uid
+                gid_changed = current_file_info.st_gid != gid
 
-            if uid_changed or gid_changed:
-                print("Updating UID, GID for %s" % path, file=sys.stderr)
-                os.chown(path, uid, gid)
+                if uid_changed or gid_changed:
+                    print("Updating UID, GID for %s" % path, file=sys.stderr)
+                    os.chown(path, uid, gid)
 
-            if mode_changed:
-                print("Updating permissions for %s" % path, file=sys.stderr)
-                os.chmod(path, mode)
+                if mode_changed:
+                    print("Updating permissions for %s" % path, file=sys.stderr)
+                    os.chmod(path, mode)
 
-            if mtime_changed:
-                print("Updating mtime for %s" % path, file=sys.stderr)
-                os.utime(path, (atime, mtime))
-        else:
-            print("Skipping non-existent file %s" % path, file=sys.stderr)
-
+                if mtime_changed:
+                    print("Updating mtime for %s" % path, file=sys.stderr)
+                    os.utime(path, (atime, mtime))
+            else:
+                print("Skipping non-existent file %s" % path, file=sys.stderr)
 
 def main():
     ATTR_FILE_NAME = ".saved-file-attrs"
